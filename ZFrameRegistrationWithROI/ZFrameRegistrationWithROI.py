@@ -90,7 +90,6 @@ class ZFrameRegistrationWithROIWidget(ScriptedLoadableModuleWidget, ModuleWidget
     ScriptedLoadableModuleWidget.setup(self)
     self.logic = ZFrameRegistrationWithROILogic()
     self.setupSliceWidgets()
-    self.annotationLogic = slicer.modules.annotations.logic()
     self.zFrameRegistrationClass = OpenSourceZFrameRegistration
     self.roiObserverTag = None
     self.coverTemplateROI = None
@@ -193,7 +192,7 @@ class ZFrameRegistrationWithROIWidget(ScriptedLoadableModuleWidget, ModuleWidget
     @vtk.calldata_type(vtk.VTK_OBJECT)
     def onNodeAdded(caller, event, calldata):
       node = calldata
-      if isinstance(node, slicer.vtkMRMLAnnotationROINode):
+      if isinstance(node, slicer.vtkMRMLMarkupsROINode):
         self.removeROIObserver()
         self.coverTemplateROI = node
         self.runZFrameRegistrationButton.enabled = self.isRegistrationPossible()
@@ -210,13 +209,12 @@ class ZFrameRegistrationWithROIWidget(ScriptedLoadableModuleWidget, ModuleWidget
       self.roiObserverTag = slicer.mrmlScene.RemoveObserver(self.roiObserverTag)
 
   def setROIMode(self, mode):
-    mrmlScene = self.annotationLogic.GetMRMLScene()
-    selectionNode = mrmlScene.GetNthNodeByClass(0, "vtkMRMLSelectionNode")
-    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLAnnotationROINode")
+    selectionNode = slicer.mrmlScene.GetNthNodeByClass(0, "vtkMRMLSelectionNode")
+    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsROINode")
     if mode == False:
-      self.annotationLogic.StopPlaceMode(False)
+      slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton").SwitchToViewTransformMode()  # stop place mode
     else:
-      self.annotationLogic.StartPlaceMode(False)
+      slicer.modules.markups.logic().StartPlaceMode(False)
 
   def onApplyZFrameRegistrationButtonClicked(self):
     self.retryZFrameRegistrationButton.enabled = True
@@ -440,7 +438,7 @@ class ZFrameRegistrationWithROITest(ScriptedLoadableModuleTest):
     self.delayDisplay('Finished with loading')
 
     zFrameRegistrationLogic = ZFrameRegistrationWithROILogic()
-    ROINode = slicer.vtkMRMLAnnotationROINode()
+    ROINode = slicer.vtkMRMLMarkupsROINode()
     ROINode.SetName("ROINodeForCropping")
     ROICenterPoint = [-6.91920280456543, 15.245062828063965, -101.13504791259766]
     ROINode.SetXYZ(ROICenterPoint)
@@ -545,4 +543,4 @@ if __name__ == "__main__":
 
   print(sys.argv)
 
-  slicelet = ZFrameRegistrationWithROISlicelet()        
+  slicelet = ZFrameRegistrationWithROISlicelet()
